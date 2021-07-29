@@ -1,73 +1,98 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:flutter_stripe/flutter_stripe.dart';
+import 'package:http/http.dart' as http;
 import 'package:stripe_example/widgets/loading_button.dart';
 import 'package:stripe_platform_interface/stripe_platform_interface.dart';
 
 import '../config.dart';
 
 class WebhookPaymentScreen extends StatefulWidget {
+  const WebhookPaymentScreen({Key? key}) : super(key: key);
+
   @override
   _WebhookPaymentScreenState createState() => _WebhookPaymentScreenState();
 }
 
 class _WebhookPaymentScreenState extends State<WebhookPaymentScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // we perform a set state in order to force generating a different key for the PaymentForm
+    WidgetsBinding.instance?.addPostFrameCallback((timeStamp) {
+      setState(() {});
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(),
+      body: PaymentForm(key: UniqueKey()), // generating a different key
+    );
+  }
+}
+
+class PaymentForm extends StatefulWidget {
+  const PaymentForm({Key? key}) : super(key: key);
+
+  @override
+  _PaymentFormState createState() => _PaymentFormState();
+}
+
+class _PaymentFormState extends State<PaymentForm> {
   CardFieldInputDetails? _card;
   String _email = '';
   bool? _saveCard = false;
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Padding(
-            padding: EdgeInsets.all(16),
-            child: TextField(
-              decoration: InputDecoration(hintText: 'Email'),
-              onChanged: (value) {
-                setState(() {
-                  _email = value;
-                });
-              },
-            ),
-          ),
-          Padding(
-            padding: EdgeInsets.all(16),
-            child: CardField(
-              onCardChanged: (card) {
-                setState(() {
-                  _card = card;
-                });
-              },
-            ),
-          ),
-          CheckboxListTile(
-            value: _saveCard,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: EdgeInsets.all(16),
+          child: TextField(
+            decoration: InputDecoration(hintText: 'Email'),
             onChanged: (value) {
               setState(() {
-                _saveCard = value;
+                _email = value;
               });
             },
-            title: Text('Save card during payment'),
           ),
+        ),
+        Padding(
+          padding: EdgeInsets.all(16),
+          child: CardField(
+            onCardChanged: (card) {
+              setState(() {
+                _card = card;
+              });
+            },
+          ),
+        ),
+        CheckboxListTile(
+          value: _saveCard,
+          onChanged: (value) {
+            setState(() {
+              _saveCard = value;
+            });
+          },
+          title: Text('Save card during payment'),
+        ),
+        Padding(
+          padding: EdgeInsets.all(16),
+          child: LoadingButton(
+            onPressed: _card?.complete == true ? _handlePayPress : null,
+            text: 'Pay',
+          ),
+        ),
+        if (_card != null)
           Padding(
-            padding: EdgeInsets.all(16),
-            child: LoadingButton(
-              onPressed: _card?.complete == true ? _handlePayPress : null,
-              text: 'Pay',
-            ),
-          ),
-          if (_card != null)
-            Padding(
-                padding: EdgeInsets.all(16),
-                child: Text(_card!.toJson().toString())),
-        ],
-      ),
+              padding: EdgeInsets.all(16),
+              child: Text(_card!.toJson().toString())),
+      ],
     );
   }
 
